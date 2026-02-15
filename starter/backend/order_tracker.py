@@ -3,6 +3,7 @@
 from typing import Final, List
 
 from backend.exception.duplicate_order_error import DuplicateOrderError
+from backend.exception.empty_order_id_error import EmptyOrderIdError
 from backend.exception.invalid_initial_status_error import InvalidInitialStatusError
 from backend.exception.minimum_order_quantity_error import MinimumOrderQuantityError
 
@@ -45,7 +46,10 @@ class OrderTracker:
         return order
 
     def get_order_by_id(self, order_id: str):
-        pass
+        if not order_id:
+            raise EmptyOrderIdError()
+
+        return self.storage.get_order(order_id)
 
     def update_order_status(self, order_id: str, new_status: str):
         pass
