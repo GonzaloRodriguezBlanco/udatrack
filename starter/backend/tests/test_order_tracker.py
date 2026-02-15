@@ -165,3 +165,42 @@ def test_add_order_with_invalid_initial_status_raise_error(order_tracker, order_
     with pytest.raises(ValueError, match=f"Invalid initial status, allowed '{", ".join(order_tracker.INITIAL_STATUS_ALLOWED)}' but  '{status}' given."):
         order_tracker.add_order(**order_default)
 
+# DONE: Fetch existing order id returns order by its ID or return None if it doesn't exist
+def test_fetch_by_existing_order_id_returns_order(order_tracker, order_default):
+    # Arrange
+    mock_storage = order_tracker.storage
+    mock_storage.get_order.return_value = order_default
+    order_id = order_default.get('order_id')
+
+    # Act
+    order_actual = order_tracker.get_order_by_id(order_id)
+
+    # Assert
+    mock_storage.get_order.assert_called_once()
+    mock_storage.get_order.assert_called_with(order_id)
+    assert order_actual == order_default
+
+# DONE: Fetch non-existing order id returns None
+def test_fetch_by_non_existing_order_id_returns_none(order_tracker):
+    # Arrange
+    # Act
+    order = order_tracker.get_order_by_id("non_existing_order_id")
+    # Assert
+    assert order is None
+
+# DONE: not present required argument order ID should raise exception
+def test_not_present_required_argument_order_id_should_raise_error(order_tracker):
+    # Act
+    with pytest.raises(TypeError, match="missing 1 required positional argument: 'order_id'"):
+        order_tracker.get_order_by_id()
+
+# DONE: Empty ID should raise exception
+def test_fetch_by_empty_id_should_raise_error(order_tracker):
+    # Arrange
+    empty_id = ""
+
+    # Act
+    with pytest.raises(ValueError, match="'order_id' cannot be empty."):
+        order_tracker.get_order_by_id(empty_id)
+
+    # Assert
