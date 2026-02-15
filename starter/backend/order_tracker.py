@@ -14,7 +14,25 @@ class OrderTracker:
         self.storage = storage
 
     def add_order(self, order_id: str, item_name: str, quantity: int, customer_id: str, status: str = "pending"):
-        pass
+        if quantity <= 0:
+            raise ValueError(f"Quantity must be greater than 0, {quantity} given.")
+
+        if status not in ["pending", "processing"]:
+            raise ValueError(f"Invalid initial status, allowed 'pending' and 'processing' but  '{status}' given.")
+
+        order = {
+            "order_id": order_id,
+            "item_name": item_name,
+            "quantity": quantity,
+            "customer_id": customer_id,
+            "status": status
+        }
+
+        if self.storage.get_order(order_id) is not None:
+            raise ValueError(f"Order already exists with ID '{order_id}'")
+
+        self.storage.save_order(order_id, order)
+        return order
 
     def get_order_by_id(self, order_id: str):
         pass
