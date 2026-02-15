@@ -203,4 +203,50 @@ def test_fetch_by_empty_id_should_raise_error(order_tracker):
     with pytest.raises(ValueError, match="'order_id' cannot be empty."):
         order_tracker.get_order_by_id(empty_id)
 
+# DONE: update_order_status success_path
+@pytest.mark.parametrize("existing_order,new_status", [
+    (dict(order_id='order-id', item_name='jacket', quantity=1, customer_id='customer_id', status='pending'), 'cancelled'),
+    (dict(order_id='order-id', item_name='jacket', quantity=1, customer_id='customer_id', status='pending'), 'processing'),
+    (dict(order_id='order-id', item_name='jacket', quantity=1, customer_id='customer_id', status='processing'), 'cancelled'),
+    (dict(order_id='order-id', item_name='jacket', quantity=1, customer_id='customer_id', status='processing'), 'shipped'),
+    (dict(order_id='order-id', item_name='jacket', quantity=1, customer_id='customer_id', status='shipped'), 'delivered')
+])
+def test_update_order_status_sucess(order_tracker, existing_order, new_status):
+    # Arrange
+    mock_storage = order_tracker.storage
+    mock_storage.get_order.return_value = existing_order
+
+    # Act
+    order_tracker.update_order_status(existing_order['order_id'], new_status)
+
     # Assert
+    mock_storage.get_order.assert_called_once()
+    mock_storage.get_order.assert_called_with(existing_order['order_id'])
+    mock_storage.save_order.assert_called_once_with(existing_order['order_id'], dict(existing_order, status=new_status))
+
+# DONE: invalid status (fail fast, no storage read)
+def test_update_order_with_invalid_status_should_raise_error(order_tracker):
+    # Arrange
+    invalid_status = "invalid"
+
+    # Act
+    with pytest.raises(ValueError, match=f"Not a valid status. Allowed values '{", ".join(order_tracker.VALID_STATUS_ALLOWED)}' but '{invalid_status}' given"):
+        order_tracker.update_order_status('order_id', invalid_status)
+
+# DONE: update_order_status non existent order
+def test_update_order_status_with_not_found_order_should_raise_error(order_tracker):
+    # Arrange
+    non_existing_order_id = 'non_existing_id'
+
+    # Act
+    with pytest.raises(Exception, match=f"Order with ID '{non_existing_order_id}' not found."):
+        order_tracker.update_order_status(non_existing_order_id, 'shipped')
+
+# DONE: update_order_status empty order id should raise error
+def test_update_order_status_with_empty_order_id_should_raise_error(order_tracker):
+    # Arrange
+    empty_id = ""
+
+    # Act
+    with pytest.raises(ValueError, match="'order_id' cannot be empty."):
+        order_tracker.update_order_status(empty_id, 'shipped')
