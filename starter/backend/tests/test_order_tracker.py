@@ -109,7 +109,7 @@ def test_add_order_with_duplicate_id_raise_exception(order_tracker, order_defaul
      order_id = order_default.get('order_id')
 
      # Act
-     with pytest.raises(ValueError, match=f"Order already exists with ID '{order_id}'"):
+     with pytest.raises(ValueError, match=f"Order with ID '{order_id}' already exists."):
          order_tracker.add_order(
              order_id,
              order_duplicated.get('item_name'),
@@ -125,7 +125,7 @@ def test_add_order_with_duplicate_id_raise_exception(order_tracker, order_defaul
 @pytest.mark.parametrize("quantity", [0, -1])
 def test_add_order_with_invalid_quantity_should_raise_error(order_tracker, quantity, order_default):
     # Act
-    with pytest.raises(ValueError, match=f"Quantity must be greater than 0, {quantity} given."):
+    with pytest.raises(ValueError, match=f"Minimum quantity value allowed {order_tracker.MIN_QUANTITY_ALLOWED}, {quantity} given."):
         order_tracker.add_order(
             order_default.get('order_id'),
             order_default.get('item_name'),
@@ -162,6 +162,6 @@ def test_add_order_with_invalid_initial_status_raise_error(order_tracker, order_
     order_default['status'] = status
 
     # Act
-    with pytest.raises(ValueError, match=f"Invalid initial status, allowed 'pending' and 'processing' but  '{status}' given."):
+    with pytest.raises(ValueError, match=f"Invalid initial status, allowed '{", ".join(order_tracker.INITIAL_STATUS_ALLOWED)}' but  '{status}' given."):
         order_tracker.add_order(**order_default)
 

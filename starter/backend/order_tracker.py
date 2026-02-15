@@ -1,11 +1,20 @@
 # This module contains the OrderTracker class, which encapsulates the core
 # business logic for managing orders.
+from typing import Final, List
+
+from backend.exception.duplicate_order_error import DuplicateOrderError
+from backend.exception.invalid_initial_status_error import InvalidInitialStatusError
+from backend.exception.minimum_order_quantity_error import MinimumOrderQuantityError
+
 
 class OrderTracker:
     """
     Manages customer orders, providing functionalities to add, update,
     and retrieve order information.
     """
+    MIN_QUANTITY_ALLOWED: Final[int] = 1
+    INITIAL_STATUS_ALLOWED: Final[List[str]] = ['pending', 'processing']
+
     def __init__(self, storage):
         required_methods = ['save_order', 'get_order', 'get_all_orders']
         for method in required_methods:
@@ -14,11 +23,14 @@ class OrderTracker:
         self.storage = storage
 
     def add_order(self, order_id: str, item_name: str, quantity: int, customer_id: str, status: str = "pending"):
-        if quantity <= 0:
-            raise ValueError(f"Quantity must be greater than 0, {quantity} given.")
+        if quantity < self.MIN_QUANTITY_ALLOWED:
+            raise MinimumOrderQuantityError(self.MIN_QUANTITY_ALLOWED, quantity)
 
-        if status not in ["pending", "processing"]:
-            raise ValueError(f"Invalid initial status, allowed 'pending' and 'processing' but  '{status}' given.")
+        if status not in self.INITIAL_STATUS_ALLOWED:
+            raise InvalidInitialStatusError(self.INITIAL_STATUS_ALLOWED, status)
+
+        if self.storage.get_order(order_id) is not None:
+            raise DuplicateOrderError(order_id)
 
         order = {
             "order_id": order_id,
@@ -28,10 +40,8 @@ class OrderTracker:
             "status": status
         }
 
-        if self.storage.get_order(order_id) is not None:
-            raise ValueError(f"Order already exists with ID '{order_id}'")
-
         self.storage.save_order(order_id, order)
+
         return order
 
     def get_order_by_id(self, order_id: str):
