@@ -1,6 +1,7 @@
 import pytest
 from unittest.mock import Mock
 from ..order_tracker import OrderTracker
+import uuid
 
 # --- Fixtures for Unit Tests ---
 
@@ -24,6 +25,143 @@ def order_tracker(mock_storage):
     """
     return OrderTracker(mock_storage)
 
+@pytest.fixture
+def default_id():
+    return str(uuid.uuid4())
+
+@pytest.fixture
+def order_default(default_id):
+    """
+    Provides a order string for testing.
+    """
+    return {
+        "order_id": default_id,
+        "item_name": 'jacket',
+        "quantity": 1,
+        "customer_id": default_id,
+    }
 #
 # --- TODO: add test functions below this line ---
 #
+def test_add_order_without_status_creates_order_with_status_pending(order_tracker):
+    # Arrange
+    mock_storage = order_tracker.storage
+
+    order_id = str(uuid.uuid4())
+    customer_id = str(uuid.uuid4())
+
+    # Act
+    order_tracker.add_order(
+        order_id,
+        'jacket',
+        1,
+        customer_id
+    )
+
+    # Assert
+    mock_storage.save_order.assert_called_once()
+    mock_storage.save_order.assert_called_with(
+        order_id,
+        dict(
+            order_id=order_id,
+            item_name='jacket',
+            quantity=1,
+            customer_id = customer_id,
+            status='pending'
+        )
+    )
+
+@pytest.mark.parametrize("status", [
+    'pending',
+    'processing'
+])
+def test_add_order_with_explicit_shipped_status(order_tracker, mock_storage, order_default, status):
+    # Arrange
+    order_id = order_default.get('order_id')
+    order = dict(order_default, status=status)
+
+    # Act
+    order_tracker.add_order(
+        order_id,
+        order.get('item_name'),
+        order.get('quantity'),
+        order.get('customer_id'),
+        order.get('status')
+    )
+
+    # Assert
+    mock_storage.save_order.assert_called_once()
+    mock_storage.save_order.assert_called_with(order_id, order)
+
+# DONE duplicate IDs
+def test_add_order_with_duplicate_id_raise_exception(order_tracker, order_default):
+     # Arrange
+     order_duplicated = order_default.copy()
+     mock_storage = order_tracker.storage
+     mock_storage.get_order.side_effect = [None, order_default]
+
+     order_tracker.add_order(
+         order_default.get('order_id'),
+         order_default.get('item_name'),
+         order_default.get('quantity'),
+         order_default.get('customer_id')
+     )
+     order_id = order_default.get('order_id')
+
+     # Act
+     with pytest.raises(ValueError, match=f"Order with ID '{order_id}' already exists."):
+         order_tracker.add_order(
+             order_id,
+             order_duplicated.get('item_name'),
+             order_duplicated.get('quantity'),
+             order_duplicated.get('customer_id')
+         )
+
+     # Assert
+     assert mock_storage.get_order.call_count == 2
+     assert mock_storage.save_order.call_count == 1
+
+# DONE invalid quantity
+@pytest.mark.parametrize("quantity", [0, -1])
+def test_add_order_with_invalid_quantity_should_raise_error(order_tracker, quantity, order_default):
+    # Act
+    with pytest.raises(ValueError, match=f"Minimum quantity value allowed {order_tracker.MIN_QUANTITY_ALLOWED}, {quantity} given."):
+        order_tracker.add_order(
+            order_default.get('order_id'),
+            order_default.get('item_name'),
+            quantity,
+            order_default.get('customer_id')
+        )
+
+# DONE missing required fields
+@pytest.mark.parametrize("order,error_message", [
+    (dict(item_name="jacket", quantity=1, customer_id=str(uuid.uuid4())),
+     "missing 1 required positional argument: 'order_id'"),
+    (dict(order_id=str(uuid.uuid4()), quantity=1, customer_id=str(uuid.uuid4())),
+     "missing 1 required positional argument: 'item_name'"),
+    (dict(order_id=str(uuid.uuid4()), item_name='jacket', customer_id=str(uuid.uuid4())),
+     "missing 1 required positional argument: 'quantity'"),
+    (dict(order_id=str(uuid.uuid4()), item_name='jacket', quantity=1),
+     "missing 1 required positional argument: 'customer_id'"),
+    (dict(item_name='jacket', customer_id=str(uuid.uuid4())),
+     "missing 2 required positional arguments: 'order_id' and 'quantity'"),
+])
+def test_add_oder_without_required_fields_should_raise_error(order_tracker, order, error_message):
+    # Act
+    with pytest.raises(TypeError, match=error_message):
+        order_tracker.add_order(**order)
+
+# DONE invalid initial status. Considering valid initial pending and processing.
+@pytest.mark.parametrize("status", [
+    'shipped',
+    'delivered',
+    'cancelled'
+])
+def test_add_order_with_invalid_initial_status_raise_error(order_tracker, order_default, status):
+    # Arrange
+    order_default['status'] = status
+
+    # Act
+    with pytest.raises(ValueError, match=f"Invalid initial status, allowed '{", ".join(order_tracker.INITIAL_STATUS_ALLOWED)}' but  '{status}' given."):
+        order_tracker.add_order(**order_default)
+
