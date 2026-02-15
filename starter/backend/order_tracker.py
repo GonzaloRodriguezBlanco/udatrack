@@ -5,7 +5,9 @@ from typing import Final, List
 from backend.exception.duplicate_order_error import DuplicateOrderError
 from backend.exception.empty_order_id_error import EmptyOrderIdError
 from backend.exception.invalid_initial_status_error import InvalidInitialStatusError
+from backend.exception.invalid_status_error import InvalidStatusError
 from backend.exception.minimum_order_quantity_error import MinimumOrderQuantityError
+from backend.exception.order_not_found_error import OrderNotFoundError
 
 
 class OrderTracker:
@@ -15,6 +17,7 @@ class OrderTracker:
     """
     MIN_QUANTITY_ALLOWED: Final[int] = 1
     INITIAL_STATUS_ALLOWED: Final[List[str]] = ['pending', 'processing']
+    VALID_STATUS_ALLOWED: Final[List[str]] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
 
     def __init__(self, storage):
         required_methods = ['save_order', 'get_order', 'get_all_orders']
@@ -52,7 +55,19 @@ class OrderTracker:
         return self.storage.get_order(order_id)
 
     def update_order_status(self, order_id: str, new_status: str):
-        pass
+        if not order_id:
+            raise EmptyOrderIdError()
+
+        if new_status not in self.VALID_STATUS_ALLOWED:
+            raise InvalidStatusError(self.VALID_STATUS_ALLOWED, new_status)
+
+        order = self.storage.get_order(order_id)
+
+        if not order:
+            raise OrderNotFoundError(order_id)
+
+        order["status"] = new_status
+        self.storage.save_order(order_id, order)
 
     def list_all_orders(self):
         pass
