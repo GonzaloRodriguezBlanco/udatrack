@@ -285,3 +285,58 @@ def test_list_all_orders_with_multiple_orders(order_tracker, order_default):
     assert len(orders) == 2
     assert orders[0] == order_default
     assert orders[1] == another_order
+
+# DONE: List orders by status match some orders
+# DONE: List orders by status match none
+# DONE: List orders by status empty_storage
+@pytest.mark.parametrize("fixtures, status, expected_len, expected_orders", [
+    (
+            {
+                'ord-01': dict(order_id='ord-01', item_name='jacket', quantity=1, customer_id='customer_id', status='processing'),
+                'ord-02': dict(order_id='ord-02', item_name='jacket', quantity=1, customer_id='customer_id', status='processing'),
+                'ord-03': dict(order_id='ord-03', item_name='jacket', quantity=1, customer_id='customer_id', status='shipped'),
+            },
+            'shipped',
+            1,
+            [
+                dict(order_id='ord-03', item_name='jacket', quantity=1, customer_id='customer_id', status='shipped')
+            ]
+    ),
+    (
+            {
+                'ord-01': dict(order_id='ord-01', item_name='jacket', quantity=1, customer_id='customer_id', status='processing'),
+                'ord-02': dict(order_id='ord-02', item_name='jacket', quantity=1, customer_id='customer_id', status='processing'),
+                'ord-03': dict(order_id='ord-03', item_name='jacket', quantity=1, customer_id='customer_id', status='shipped'),
+            },
+            'pending',
+            0,
+            []
+    ),
+    ({}, 'pending', 0, []),
+])
+def test_list_orders_by_status(order_tracker, fixtures, status, expected_len, expected_orders):
+    # Arrange
+    mock_storage = order_tracker.storage
+    mock_storage.get_all_orders.return_value = fixtures
+
+    # Act
+    orders = order_tracker.list_orders_by_status(status)
+
+    # Assert
+    assert len(orders) == expected_len
+    assert orders == expected_orders
+
+# DONE: List orders by status with empty status should raise error
+def test_list_orders_by_status_with_empty_status_should_raise_error(order_tracker):
+    # Act
+    with pytest.raises(TypeError, match="missing 1 required positional argument: 'status'"):
+        order_tracker.list_orders_by_status()
+
+# DONE: List orders by status with invalid status should raise error
+def test_list_orders_by_status_with_invalid_status_should_raise_error(order_tracker):
+    # Arrange
+    invalid_status = "invalid"
+
+    # Act
+    with pytest.raises(ValueError, match="Not a valid status. Allowed values 'pending, processing, shipped, delivered, cancelled' but 'invalid' given."):
+        order_tracker.list_orders_by_status(invalid_status)

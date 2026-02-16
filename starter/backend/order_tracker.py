@@ -58,8 +58,7 @@ class OrderTracker:
         if not order_id:
             raise EmptyOrderIdError()
 
-        if new_status not in self.VALID_STATUS_ALLOWED:
-            raise InvalidStatusError(self.VALID_STATUS_ALLOWED, new_status)
+        self.__validate_status(new_status)
 
         order = self.storage.get_order(order_id)
 
@@ -73,4 +72,12 @@ class OrderTracker:
         return list(self.storage.get_all_orders().values())
 
     def list_orders_by_status(self, status: str):
-        pass
+        self.__validate_status(status)
+
+        filtered_orders = {k: v for k, v in self.storage.get_all_orders().items() if status == v.get('status')}
+
+        return list(filtered_orders.values())
+
+    def __validate_status(self, status: str):
+        if status not in self.VALID_STATUS_ALLOWED:
+            raise InvalidStatusError(self.VALID_STATUS_ALLOWED, status)
