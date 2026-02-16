@@ -73,4 +73,9 @@ class OrderTracker:
         return list(self.storage.get_all_orders().values())
 
     def list_orders_by_status(self, status: str):
-        pass
+        if status not in self.VALID_STATUS_ALLOWED:
+            raise InvalidStatusError(self.VALID_STATUS_ALLOWED, status)
+
+        filtered_orders = {k: v for k, v in self.storage.get_all_orders().items() if status == v.get('status')}
+
+        return list(filtered_orders.values())
