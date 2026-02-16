@@ -250,3 +250,38 @@ def test_update_order_status_with_empty_order_id_should_raise_error(order_tracke
     # Act
     with pytest.raises(ValueError, match="'order_id' cannot be empty."):
         order_tracker.update_order_status(empty_id, 'shipped')
+
+# DONE: List all orders with empty storage
+def test_list_all_orders_with_empty_storage(order_tracker):
+    # Arrange
+    mock_storage = order_tracker.storage
+
+    # Act
+    orders = order_tracker.list_all_orders()
+
+    # Assert
+    mock_storage.get_all_orders.assert_called_once()
+    assert len(orders) == 0
+    assert orders == list()
+
+# DONE: List all orders with multiple orders
+def test_list_all_orders_with_multiple_orders(order_tracker, order_default):
+    # Arrange
+    another_order = order_default.copy()
+    another_order['order_id'] = 'another_order_id'
+    expected_results = {
+        order_default['order_id']: order_default,
+        another_order['order_id']: another_order,
+    }
+
+    mock_storage = order_tracker.storage
+    mock_storage.get_all_orders.return_value = expected_results
+
+    # Act
+    orders = order_tracker.list_all_orders()
+
+    # Assert
+    mock_storage.get_all_orders.assert_called_once()
+    assert len(orders) == 2
+    assert orders[0] == order_default
+    assert orders[1] == another_order
