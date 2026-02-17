@@ -67,6 +67,7 @@ class OrderTracker:
 
         order["status"] = new_status
         self.storage.save_order(order_id, order)
+        return order
 
     def list_all_orders(self):
         return list(self.storage.get_all_orders().values())

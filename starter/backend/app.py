@@ -6,6 +6,7 @@ from backend.exception.duplicate_order_error import DuplicateOrderError
 from backend.exception.empty_order_id_error import EmptyOrderIdError
 from backend.exception.invalid_initial_status_error import InvalidInitialStatusError
 from backend.exception.minimum_order_quantity_error import MinimumOrderQuantityError
+from backend.exception.order_not_found_error import OrderNotFoundError
 from backend.order_tracker import OrderTracker
 from backend.in_memory_storage import InMemoryStorage
 
@@ -47,8 +48,17 @@ def get_order_api(order_id):
 
 @app.route('/api/orders/<string:order_id>/status', methods=['PUT'])
 def update_order_status_api(order_id):
-    # TODO (3): Update order status
-    pass
+    # DONE (3): Update order status
+    new_status = dict(request.json)
+    try:
+        order = order_tracker.update_order_status(order_id, new_status.get("new_status"))
+        return jsonify(order), 200
+    except EmptyOrderIdError as e:
+        return { "error": e.MESSAGE }, 400
+    except InvalidInitialStatusError as e:
+        return { "error": e.message }, 400
+    except OrderNotFoundError as e:
+        return { "error": e.message }, 404
 
 @app.route('/api/orders', methods=['GET'])
 def list_orders_api():
