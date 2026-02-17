@@ -17,6 +17,29 @@ def test_add_order_api_success(client):
     assert response.status_code == 201
     assert response.json['order_id'] == "API001"
 
+@pytest.mark.parametrize("order_data, error", [
+    ({"order_id": "API001", "item_name": "API Laptop", "quantity": 0, "customer_id": "APICUST001"}, 'Minimum quantity value allowed 1, 0 given.'),
+    ({"order_id": "API002", "item_name": "API Laptop", "quantity": 1, "customer_id": "APICUST001", "status": "shipped"}, "Invalid initial status, allowed 'pending, processing' but  'shipped' given.")
+])
+def test_add_order_api_error_400(client, order_data, error):
+    response = client.post('/api/orders', json=order_data)
+    assert response.status_code == 400
+    assert response.json['error'] == error
+
+def test_add_order_api_error_409(client):
+    # Arrange
+    order_data = {
+        "order_id": "API001", "item_name": "API Laptop", "quantity": 1, "customer_id": "APICUST001"
+    }
+    client.post('/api/orders', json=order_data)
+
+    # Act
+    response = client.post('/api/orders', json=order_data)
+
+    #Assert
+    assert response.status_code == 409
+    assert response.json['error'] == "Order with ID 'API001' already exists."
+
 def test_get_order_api_success(client):
     client.post('/api/orders', json={
         "order_id": "GET001", "item_name": "Test Item", "quantity": 1, "customer_id": "C1"
