@@ -3,6 +3,7 @@ from os import abort
 from flask import Flask, request, jsonify, send_from_directory
 
 from backend.exception.duplicate_order_error import DuplicateOrderError
+from backend.exception.empty_order_id_error import EmptyOrderIdError
 from backend.exception.invalid_initial_status_error import InvalidInitialStatusError
 from backend.exception.minimum_order_quantity_error import MinimumOrderQuantityError
 from backend.order_tracker import OrderTracker
@@ -35,8 +36,14 @@ def add_order_api():
 
 @app.route('/api/orders/<string:order_id>', methods=['GET'])
 def get_order_api(order_id):
-    # TODO (2): Get order details by ID
-    pass
+    # DONE (2): Get order details by ID
+    try:
+        order = order_tracker.get_order_by_id(order_id)
+        if not order:
+            return { "error": "Not found" }, 404
+        return jsonify(order), 200
+    except EmptyOrderIdError as e:
+        return { "error": e.MESSAGE }, 400
 
 @app.route('/api/orders/<string:order_id>/status', methods=['PUT'])
 def update_order_status_api(order_id):
