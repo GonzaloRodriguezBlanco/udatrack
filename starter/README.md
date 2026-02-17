@@ -6,7 +6,10 @@ responses in addition to the success responses. Some of the features, like the i
 was also an opportunity to refactor the code about status validation in order to avoid duplicated code.
 
 Although it was not required, one additional test was included in the integration tests for the '*Add order error response*'.
-As next steps it could be good to cover the api layer integration tests with all the http error cases.
+As next steps it could be good to cover the api layer integration tests with all the http error cases. Other options could be 
+centralizing the error handling with a simple Flask error handling, include the OpenAPI spec, add the customer filter 
+to retrieving order list or dockerize for local development. Another interesting option could be adding a GitHub Actions 
+ci pipeline.
 
 ```
 .
@@ -33,9 +36,9 @@ As next steps it could be good to cover the api layer integration tests with all
 ## Local development setup
 
 ```shell
-# Clone the starter repository
+# Clone the repository
 git clone https://github.com/GonzaloRodriguezBlanco/udatrack.git
-cd udatrack/starter
+cd udatrack
 
 # Create and activate virtual environment
 python3 -m venv venv 
