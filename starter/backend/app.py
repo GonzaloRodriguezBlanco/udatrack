@@ -62,9 +62,10 @@ def update_order_status_api(order_id):
 
 @app.route('/api/orders', methods=['GET'])
 def list_orders_api():
-    # TODO (4): List all orders
+    # DONE (4): List all orders
     # TODO (5): Filter orders by status
-    pass
+    orders = order_tracker.list_all_orders()
+    return jsonify(orders), 200
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", debug=True)
